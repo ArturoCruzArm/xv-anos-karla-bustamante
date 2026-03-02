@@ -418,9 +418,77 @@
         .delay-1 { transition-delay: 0.12s; }
         .delay-2 { transition-delay: 0.24s; }
         .delay-3 { transition-delay: 0.36s; }
+
+        /* ===== MUSIC BUTTON ===== */
+        #musicBtn {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            width: 62px; height: 62px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink-deep), var(--fuchsia));
+            border: none; cursor: pointer;
+            z-index: 999;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 24px rgba(212,71,138,0.55);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            outline: none;
+        }
+        #musicBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 32px rgba(212,71,138,0.7);
+        }
+        #musicBtn:active { transform: scale(0.95); }
+
+        /* rotating ring when playing */
+        #musicBtn::before {
+            content: '';
+            position: absolute; inset: -5px;
+            border-radius: 50%;
+            border: 3px solid rgba(212,71,138,0.4);
+            border-top-color: var(--pink-soft);
+            animation: none;
+        }
+        #musicBtn.playing::before {
+            animation: spinRing 1.8s linear infinite;
+        }
+        @keyframes spinRing {
+            to { transform: rotate(360deg); }
+        }
+
+        #musicBtn .btn-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        /* tooltip label */
+        #musicBtn::after {
+            content: attr(data-label);
+            position: absolute;
+            right: 72px; top: 50%; transform: translateY(-50%);
+            background: rgba(30,10,20,0.82);
+            color: white; font-family: 'Raleway', sans-serif;
+            font-size: 0.75rem; font-weight: 600;
+            padding: 0.3rem 0.8rem; border-radius: 20px;
+            white-space: nowrap; opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #musicBtn:hover::after { opacity: 1; }
     </style>
 </head>
 <body>
+
+    <!-- ===== MUSIC ===== -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="(Estrofa%201).mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Floating music button -->
+    <button id="musicBtn" data-label="Reproducir música" aria-label="Reproducir música">
+        <span class="btn-icon" id="musicIcon">🎵</span>
+    </button>
 
     <!-- ===== FALLING PETALS ===== -->
     <div id="petals"></div>
@@ -630,6 +698,41 @@
         }
         tick();
         setInterval(tick, 1000);
+
+        /* ===== MUSIC BUTTON ===== */
+        const audio   = document.getElementById('bgMusic');
+        const btn     = document.getElementById('musicBtn');
+        const icon    = document.getElementById('musicIcon');
+        let playing   = false;
+
+        btn.addEventListener('click', () => {
+            if (playing) {
+                audio.pause();
+                playing = false;
+                icon.textContent = '🎵';
+                btn.classList.remove('playing');
+                btn.dataset.label = 'Reproducir música';
+                btn.setAttribute('aria-label', 'Reproducir música');
+            } else {
+                audio.play().then(() => {
+                    playing = true;
+                    icon.textContent = '⏸';
+                    btn.classList.add('playing');
+                    btn.dataset.label = 'Pausar música';
+                    btn.setAttribute('aria-label', 'Pausar música');
+                }).catch(() => {
+                    // Autoplay blocked — show hint
+                    btn.dataset.label = 'Toca para escuchar';
+                });
+            }
+        });
+
+        audio.addEventListener('ended', () => {
+            playing = false;
+            icon.textContent = '🎵';
+            btn.classList.remove('playing');
+            btn.dataset.label = 'Reproducir música';
+        });
 
         /* ===== SCROLL REVEAL ===== */
         const observer = new IntersectionObserver(entries => {
