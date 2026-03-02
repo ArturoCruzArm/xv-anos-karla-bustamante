@@ -419,6 +419,83 @@
         .delay-2 { transition-delay: 0.24s; }
         .delay-3 { transition-delay: 0.36s; }
 
+        /* ===== ENVELOPE OVERLAY ===== */
+        #env-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background:
+                radial-gradient(ellipse at 25% 15%, rgba(245,208,220,0.85) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 85%, rgba(200,159,201,0.6)  0%, transparent 55%),
+                linear-gradient(170deg, #F9EDD8 0%, #FFF8F0 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: pointer; transition: opacity 0.8s ease;
+            user-select: none; -webkit-user-select: none;
+        }
+        #env-overlay.fading { opacity: 0; pointer-events: none; }
+
+        .env-deco { font-size: 1.4rem; letter-spacing: 1.2rem; opacity: 0.65; margin-bottom: 2.5rem; }
+
+        .env-wrap {
+            position: relative;
+            width: min(300px, 80vw); height: min(190px, 50vw);
+            margin-bottom: 2.5rem;
+            filter: drop-shadow(0 18px 45px rgba(212,71,138,0.3));
+            transition: transform 0.3s ease;
+        }
+        .env-wrap:hover { transform: scale(1.04) translateY(-4px); }
+
+        .env-body {
+            position: absolute; inset: 0;
+            background: linear-gradient(160deg, #FFFAF5 0%, #F9EDD8 100%);
+            border-radius: 6px; border: 1.5px solid rgba(212,71,138,0.3); overflow: hidden;
+        }
+        .env-body::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to right, rgba(212,71,138,0.07) 0%, transparent 35%, transparent 65%, rgba(212,71,138,0.07) 100%);
+        }
+        .env-body::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 55%;
+            background: rgba(212,71,138,0.06); clip-path: polygon(0 100%, 100% 100%, 50% 0);
+        }
+        .env-seal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #D4478A, #9B84C4);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; z-index: 2;
+            box-shadow: 0 4px 18px rgba(212,71,138,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+        .env-flap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 52%;
+            background: linear-gradient(150deg, #F5D0DC 0%, #DDB8CC 100%);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top center;
+            transform: perspective(900px) rotateX(0deg);
+            transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 3; border-radius: 4px 4px 0 0;
+        }
+        .env-flap::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(150deg, rgba(255,255,255,0.25) 0%, transparent 60%);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+        }
+        .env-flap.open { transform: perspective(900px) rotateX(-178deg); }
+
+        .env-hint {
+            font-family: 'Dancing Script', cursive; font-size: clamp(1.4rem, 5vw, 2rem);
+            color: var(--fuchsia); text-align: center;
+            animation: envPulse 2s ease infinite; pointer-events: none;
+        }
+        .env-sub {
+            font-family: 'Raleway', sans-serif; font-size: 0.72rem; color: var(--text-light);
+            letter-spacing: 0.25em; text-transform: uppercase;
+            margin-top: 0.6rem; text-align: center; pointer-events: none;
+        }
+        @keyframes envPulse {
+            0%, 100% { opacity: 1; transform: translateY(0); }
+            50%       { opacity: 0.6; transform: translateY(-6px); }
+        }
+
         /* ===== MUSIC BUTTON ===== */
         #musicBtn {
             position: fixed;
@@ -480,9 +557,21 @@
 </head>
 <body>
 
+    <!-- ===== ENVELOPE OVERLAY ===== -->
+    <div id="env-overlay">
+        <p class="env-deco">🌸 ✿ 🌺 ✿ 🌸</p>
+        <div class="env-wrap">
+            <div class="env-body"></div>
+            <div class="env-seal">🌸</div>
+            <div class="env-flap" id="envFlap"></div>
+        </div>
+        <p class="env-hint">Toca para abrir tu invitación</p>
+        <p class="env-sub">🌷 XV Años · Karla Lizbeth 🌷</p>
+    </div>
+
     <!-- ===== MUSIC ===== -->
     <audio id="bgMusic" loop preload="auto">
-        <source src="(Estrofa%201).mp3" type="audio/mpeg">
+        <source src="musica.mp3" type="audio/mpeg">
     </audio>
 
     <!-- Floating music button -->
@@ -616,29 +705,6 @@
         </div>
     </section>
 
-    <div class="petal-divider">✿ ✾ ✿ ✾ ✿</div>
-
-    <!-- ===== CONFIRMAR ===== -->
-    <section class="confirm-section" id="confirmar">
-        <div class="section-inner reveal" style="text-align:center;">
-            <div class="section-tag">Confirma tu Asistencia</div>
-            <h2 class="section-title">¿Nos acompañas?</h2>
-            <p class="section-subtitle">
-                Tu presencia hará este día aún más especial.<br>
-                Por favor confirma antes de:
-            </p>
-            <div class="deadline-badge">📅 10 de Abril, 2026</div>
-            <p class="confirm-label">Contactar a</p>
-            <p class="confirm-name">Rosa Hernández</p>
-            <p class="confirm-label" style="margin-top:0.2rem;">+52 1 477 736 1720</p>
-            <br>
-            <a href="https://wa.me/5214777361720?text=Hola%20Rosa!%20Confirmo%20mi%20asistencia%20a%20los%20XV%20a%C3%B1os%20de%20Karla%20Lizbeth%20el%2018%20de%20Abril%202026%20%F0%9F%8C%B8" class="whatsapp-btn">
-                <span class="whatsapp-icon">💬</span>
-                Confirmar por WhatsApp
-            </a>
-        </div>
-    </section>
-
     <!-- ===== FOOTER ===== -->
     <footer>
         <div class="footer-flowers">🌸 🌺 🌷</div>
@@ -733,6 +799,34 @@
             btn.classList.remove('playing');
             btn.dataset.label = 'Reproducir música';
         });
+
+        /* ===== ENVELOPE ===== */
+        const overlay = document.getElementById('env-overlay');
+        document.body.style.overflow = 'hidden';
+
+        overlay.addEventListener('click', () => {
+            document.getElementById('envFlap').classList.add('open');
+
+            // Arrancar música aprovechando el gesto del usuario
+            setTimeout(() => {
+                audio.play().then(() => {
+                    playing = true;
+                    icon.textContent = '⏸';
+                    btn.classList.add('playing');
+                    btn.dataset.label = 'Pausar música';
+                    btn.setAttribute('aria-label', 'Pausar música');
+                }).catch(() => {});
+            }, 450);
+
+            // Desvanecer overlay
+            setTimeout(() => {
+                overlay.classList.add('fading');
+                document.body.style.overflow = '';
+            }, 780);
+
+            // Eliminar del DOM
+            setTimeout(() => overlay.remove(), 1650);
+        }, { once: true });
 
         /* ===== SCROLL REVEAL ===== */
         const observer = new IntersectionObserver(entries => {
