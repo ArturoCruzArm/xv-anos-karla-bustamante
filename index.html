@@ -419,6 +419,159 @@
         .delay-2 { transition-delay: 0.24s; }
         .delay-3 { transition-delay: 0.36s; }
 
+        /* ===== FOTO #041 — Ken Burns Portrait ===== */
+        .photo-kb-section {
+            position: relative;
+            overflow: hidden;
+        }
+        .photo-kb-img {
+            width: 100%; height: auto;
+            display: block;
+            transform-origin: center center;
+            transform: scale(1.08);
+            transition: none;
+        }
+        .photo-kb-img.kb-active {
+            animation: kenBurns 12s ease-out forwards;
+        }
+        @keyframes kenBurns {
+            from { transform: scale(1.08); }
+            to   { transform: scale(1); }
+        }
+        .photo-kb-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(20,5,15,0.04) 0%,
+                rgba(20,5,15,0.02) 50%,
+                rgba(30,8,20,0.68) 100%
+            );
+            z-index: 1;
+        }
+        .photo-kb-text {
+            position: absolute;
+            bottom: 2rem; left: 0; right: 0;
+            z-index: 2;
+            text-align: center; color: white;
+            padding: 1.5rem;
+            opacity: 0; transform: translateY(44px);
+            transition: opacity 1s 0.5s ease, transform 1s 0.5s ease;
+        }
+        .photo-kb-text.visible { opacity: 1; transform: translateY(0); }
+        .photo-kb-quote {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(2rem, 6vw, 3.8rem);
+            text-shadow: 0 4px 22px rgba(0,0,0,0.6);
+            margin-bottom: 0.7rem; line-height: 1.2;
+        }
+        .photo-kb-sub {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.45em; text-transform: uppercase;
+            opacity: 0.8; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* ===== FOTO #051 — Cortina Reveal ===== */
+        .photo-curtain-section {
+            position: relative; padding: 0;
+            overflow: hidden; background: var(--text-dark);
+        }
+        .photo-curtain-wrap {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        .photo-curtain-img {
+            width: 100%; height: auto;
+            display: block;
+            clip-path: inset(0 50% 0 50%);
+            transition: clip-path 1.4s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+        .photo-curtain-img.curtain-open { clip-path: inset(0 0% 0 0%); }
+        .photo-curtain-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(30,8,20,0.68) 0%,
+                rgba(0,0,0,0.12) 55%,
+                transparent 100%
+            );
+            pointer-events: none; z-index: 1;
+        }
+        .photo-curtain-text {
+            position: absolute; bottom: 2.8rem; left: 0; right: 0;
+            text-align: center; z-index: 2; color: white;
+            opacity: 0; transform: translateY(22px);
+            transition: opacity 0.9s 1.4s ease, transform 0.9s 1.4s ease;
+        }
+        .photo-curtain-text.visible { opacity: 1; transform: translateY(0); }
+        .photo-curtain-title {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: clamp(1.5rem, 4.5vw, 2.6rem);
+            text-shadow: 0 3px 16px rgba(0,0,0,0.65);
+            margin-bottom: 0.4rem;
+        }
+        .photo-curtain-date {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.45em; text-transform: uppercase;
+            opacity: 0.78;
+        }
+
+        /* ===== FOTO #082 — Polaroid 3D Tilt ===== */
+        .photo-polaroid-section {
+            background: linear-gradient(155deg,
+                rgba(245,208,220,0.45) 0%,
+                rgba(240,232,255,0.55) 50%,
+                rgba(255,248,240,0.65) 100%);
+            padding: 5rem 1.5rem;
+            display: flex; flex-direction: column;
+            align-items: center; text-align: center;
+            position: relative; z-index: 2;
+        }
+        .photo-polaroid-tag {
+            display: inline-block;
+            font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 0.35em; text-transform: uppercase;
+            color: var(--pink-deep);
+            background: rgba(212,71,138,0.1);
+            padding: 0.3rem 0.9rem; border-radius: 50px;
+            margin-bottom: 1rem;
+        }
+        .photo-polaroid-heading {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(2rem, 5.5vw, 3rem);
+            color: var(--text-dark); margin-bottom: 2.8rem;
+        }
+        .polaroid-frame {
+            background: white;
+            padding: 0.9rem 0.9rem 3rem;
+            border-radius: 3px;
+            box-shadow:
+                0 28px 65px rgba(0,0,0,0.2),
+                0 6px 20px rgba(212,71,138,0.15);
+            width: min(320px, 82vw);
+            transform-style: preserve-3d;
+            transition: box-shadow 0.3s ease, transform 0.1s ease;
+            cursor: default; will-change: transform;
+        }
+        .polaroid-frame img {
+            width: 100%; height: auto; display: block;
+            border-radius: 2px;
+            user-select: none; pointer-events: none;
+        }
+        .polaroid-caption {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.2rem; color: var(--text-dark);
+            margin-top: 0.8rem; text-align: center;
+        }
+        .photo-polaroid-sub {
+            margin-top: 2rem;
+            font-family: 'Playfair Display', serif;
+            font-style: italic; font-size: 1rem;
+            color: var(--text-mid); max-width: 380px;
+            line-height: 1.9;
+        }
+
         /* ===== ENVELOPE OVERLAY ===== */
         #env-overlay {
             position: fixed; inset: 0; z-index: 9999;
@@ -632,6 +785,16 @@
         </div>
     </section>
 
+    <!-- ===== FOTO #041 — Ken Burns Portrait ===== -->
+    <div class="photo-kb-section" id="photo-kb">
+        <img class="photo-kb-img" src="imagenes/DSC_0916.webp" alt="Karla Lizbeth" draggable="false">
+        <div class="photo-kb-overlay"></div>
+        <div class="photo-kb-text" id="photoKbText">
+            <p class="photo-kb-quote">Karla Lizbeth</p>
+            <p class="photo-kb-sub">XV Años · 18 de Abril · 2026</p>
+        </div>
+    </div>
+
     <div class="petal-divider">✿ ✾ ✿ ✾ ✿</div>
 
     <!-- ===== EVENTOS ===== -->
@@ -672,6 +835,18 @@
         </div>
     </section>
 
+    <!-- ===== FOTO #051 — Cortina Reveal ===== -->
+    <div class="photo-curtain-section">
+        <div class="photo-curtain-wrap" id="photo-curtain-wrap">
+            <img class="photo-curtain-img" id="photoCurtain" src="imagenes/DSC_0926.webp" alt="Karla Lizbeth" draggable="false">
+            <div class="photo-curtain-overlay"></div>
+            <div class="photo-curtain-text" id="photoCurtainText">
+                <p class="photo-curtain-title">Un sueño hecho realidad</p>
+                <p class="photo-curtain-date">18 · IV · MMXXVI</p>
+            </div>
+        </div>
+    </div>
+
     <div class="petal-divider">✿ ✾ ✿ ✾ ✿</div>
 
     <!-- ===== FAMILIA ===== -->
@@ -704,6 +879,20 @@
             </div>
         </div>
     </section>
+
+    <!-- ===== FOTO #082 — Polaroid 3D Tilt ===== -->
+    <div class="photo-polaroid-section">
+        <span class="photo-polaroid-tag">Un Momento Eterno</span>
+        <h2 class="photo-polaroid-heading reveal">El Vestido de sus Sueños</h2>
+        <div class="polaroid-frame reveal" id="polaroidFrame">
+            <img src="imagenes/DSC_0959.webp" alt="Karla Lizbeth">
+            <p class="polaroid-caption">Karla Lizbeth 🌸</p>
+        </div>
+        <p class="photo-polaroid-sub reveal delay-1">
+            Cada flor, cada color, cada detalle&hellip;<br>
+            todo listo para el día más especial.
+        </p>
+    </div>
 
     <!-- ===== FOOTER ===== -->
     <footer>
@@ -833,6 +1022,48 @@
             entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
         }, { threshold: 0.12 });
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        /* ===== FOTO #041 — Ken Burns ===== */
+        const kbObs = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.querySelector('.photo-kb-img').classList.add('kb-active');
+                    document.getElementById('photoKbText').classList.add('visible');
+                    kbObs.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.15 });
+        const kbSection = document.getElementById('photo-kb');
+        if (kbSection) kbObs.observe(kbSection);
+
+        /* ===== FOTO #051 — Cortina Reveal ===== */
+        const curtainObs = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    document.getElementById('photoCurtain').classList.add('curtain-open');
+                    document.getElementById('photoCurtainText').classList.add('visible');
+                    curtainObs.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.25 });
+        const curtainWrap = document.getElementById('photo-curtain-wrap');
+        if (curtainWrap) curtainObs.observe(curtainWrap);
+
+        /* ===== FOTO #082 — Polaroid 3D Tilt ===== */
+        const polaroid = document.getElementById('polaroidFrame');
+        if (polaroid) {
+            polaroid.addEventListener('mousemove', e => {
+                const r = polaroid.getBoundingClientRect();
+                const dx = (e.clientX - r.left - r.width  / 2) / (r.width  / 2);
+                const dy = (e.clientY - r.top  - r.height / 2) / (r.height / 2);
+                polaroid.style.transform = `perspective(800px) rotateY(${dx * 14}deg) rotateX(${-dy * 10}deg) scale(1.04)`;
+                polaroid.style.boxShadow = `${-dx * 22}px ${dy * 14}px 70px rgba(0,0,0,0.24), 0 6px 20px rgba(212,71,138,0.2)`;
+            });
+            polaroid.addEventListener('mouseleave', () => {
+                polaroid.style.transform = '';
+                polaroid.style.boxShadow = '';
+            });
+        }
     </script>
 </body>
 </html>
