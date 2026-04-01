@@ -138,24 +138,32 @@
     },
 
     video: {
-      icon: '🎬', label: 'Canciones para el Video',
+      icon: '🎬', label: 'Inspiración para el Video',
       campos: [
-        { key:'cancion_entrada',  label:'Canción de entrada al salón',      type:'text',     ph:'Nombre de la canción y artista' },
-        { key:'cancion_vals',     label:'Canción del vals / primer baile',  type:'text',     ph:'Nombre de la canción y artista' },
-        { key:'cancion_brindis',  label:'Canción del brindis',              type:'text',     ph:'Nombre de la canción y artista' },
-        { key:'cancion_pastel',   label:'Canción del pastel',               type:'text',     ph:'Nombre de la canción y artista' },
-        { key:'canciones_no',     label:'Canciones que NO quieres en el video', type:'textarea', ph:'Una por línea' },
-        { key:'estilo_edicion',   label:'Estilo de edición preferido',      type:'select',   opciones:['Cinematográfico','Dinámico / moderno','Clásico / tradicional','Documental / natural'] },
-        { key:'mensaje_video',    label:'Mensaje o dedicatoria para el video', type:'textarea', ph:'Texto que aparecerá en los títulos...' },
+        // Bodas
+        { key:'como_se_conocieron',   label:'¿Cómo se conocieron?',                          type:'textarea', ph:'Cuéntanos la historia desde el principio…',                      tiposEvento:['boda'] },
+        { key:'testimonio_ella',      label:'Testimonio de ella: ¿qué hace único a tu novio?', type:'textarea', ph:'Con sus propias palabras…',                                     tiposEvento:['boda'] },
+        { key:'testimonio_el',        label:'Testimonio de él: ¿qué hace única a tu novia?',   type:'textarea', ph:'Con sus propias palabras…',                                     tiposEvento:['boda'] },
+        { key:'momento_favorito',     label:'Momento favorito juntos antes de la boda',        type:'textarea', ph:'Un recuerdo, viaje, fecha especial…',                           tiposEvento:['boda'] },
+        // XV años
+        { key:'como_planificaron',    label:'¿Cómo imaginaban esta fiesta? ¿De quién fue la idea?', type:'textarea', ph:'La quinceañera, mamá, papá… cuénten la historia detrás…', tiposEvento:['xv'] },
+        { key:'testimonio_madre_xv',  label:'Testimonio de mamá: algo especial sobre tu hija',  type:'textarea', ph:'Un recuerdo, su personalidad, lo que más la enorgullece…',    tiposEvento:['xv'] },
+        { key:'testimonio_xv',        label:'Testimonio de la quinceañera: ¿cómo te imaginas este día?', type:'textarea', ph:'Emociones, sueños, lo que más esperas…',              tiposEvento:['xv'] },
+        // General
+        { key:'emocion_video',        label:'¿Qué emoción principal quieren que sienta quien vea el video?', type:'select', opciones:['Emoción / nostalgia','Alegría / celebración','Romance / amor profundo','Orgullo familiar','Energía / fiesta'] },
+        { key:'estilo_edicion',       label:'Estilo de edición preferido',                     type:'select',   opciones:['Cinematográfico','Dinámico / moderno','Clásico / elegante','Documental / natural'] },
+        { key:'mensaje_video',        label:'Frase o dedicatoria que aparecerá en los títulos', type:'textarea', ph:'Un texto corto lleno de significado…' },
       ]
     },
 
     musica_invitacion: {
-      icon: '🎵', label: 'Música de la Invitación Web',
+      icon: '🎵', label: 'Inspiración para la Música de la Invitación',
       campos: [
-        { key:'nombre_cancion', label:'Nombre de la canción',       type:'text', ph:'Ej: A Thousand Years' },
-        { key:'artista',        label:'Artista / Banda',             type:'text', ph:'Ej: Christina Perri' },
-        { key:'generos',        label:'Géneros musicales preferidos',type:'text', ph:'Ej: Regional mexicano, pop, cumbia' },
+        { key:'ambiente_musica',      label:'¿Qué ambiente quieres transmitir al abrir la invitación?', type:'select', opciones:['Romántico y emotivo','Alegre y festivo','Elegante y sofisticado','Fresco y juvenil','Íntimo y familiar'] },
+        { key:'generos_gustan',       label:'Géneros musicales que les gustan',               type:'text',     ph:'Ej: regional mexicano, pop en español, baladas, electrónico…' },
+        { key:'recuerdo_musical',     label:'¿Hay alguna canción o melodía que los identifique o recuerden juntos?', type:'textarea', ph:'No para usarla, sino para inspirarnos en ese sentimiento…' },
+        { key:'instrumentos_prefiere',label:'Instrumentos o sonidos que les agradan',         type:'text',     ph:'Ej: piano, guitarra acústica, violín, beats electrónicos…' },
+        { key:'musica_no',            label:'Sonidos o estilos que definitivamente NO quieren', type:'text',   ph:'Ej: música muy estridente, reggaetón, cumbia…' },
       ]
     },
 
