@@ -1,0 +1,555 @@
+/**
+ * datos-form.js — Sistema de captura de datos de evento
+ * Muestra solo campos vacíos · Guarda con debounce 5s · Notifica al admin
+ * Foro 7 © 2026
+ */
+(function () {
+  'use strict';
+
+  const SB_URL  = 'https://nzpujmlienzfetqcgsxz.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56cHVqbWxpZW56ZmV0cWNnc3h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYzMzYsImV4cCI6MjA5MDI2MjMzNn0.xl3lsb-KYj5tVLKTnzpbsdEGoV9ySnswH4eyRuyEH1s';
+  const H = { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' };
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * DEFINICIÓN DE SECCIONES Y CAMPOS
+   * ═══════════════════════════════════════════════════════════════════ */
+  const SECCIONES = {
+
+    protagonistas: {
+      icon: '👑', label: 'Protagonistas',
+      tiposEvento: ['xv','boda','bautizo','graduacion','cumpleanos','otro'],
+      campos: [
+        { key:'nombre',       label:'Nombre completo de la festejada/o', type:'text',     ph:'Ej: Sheilyn Guadalupe Herrera Reynoso' },
+        { key:'fecha_nac',    label:'Fecha de nacimiento',               type:'date',     ph:'',                                      tiposEvento:['xv','bautizo','cumpleanos'] },
+        { key:'nombre_2',     label:'Nombre del novio',                  type:'text',     ph:'Ej: Carlos Eduardo López',              tiposEvento:['boda'] },
+        { key:'nombre_madre', label:'Nombre completo de la mamá',        type:'text',     ph:'Ej: María Concepción Reynoso Cuevas' },
+        { key:'nombre_padre', label:'Nombre completo del papá',          type:'text',     ph:'Ej: Roberto Herrera García' },
+        { key:'nombre_madre_novio', label:'Nombre de la mamá del novio', type:'text',     ph:'Para boda',                             tiposEvento:['boda'] },
+        { key:'nombre_padre_novio', label:'Nombre del papá del novio',   type:'text',     ph:'Para boda',                             tiposEvento:['boda'] },
+        { key:'mensaje_especial',   label:'Mensaje o frase especial',    type:'textarea', ph:'"Hoy comienza un nuevo capítulo..."' },
+      ]
+    },
+
+    padrinos_honor: {
+      icon: '🤝', label: 'Padrinos de Honor',
+      tiposEvento: ['xv','boda','bautizo'],
+      campos: [
+        { key:'padrino', label:'Padrino de honor', type:'text', ph:'Nombre completo' },
+        { key:'madrina', label:'Madrina de honor', type:'text', ph:'Nombre completo' },
+      ]
+    },
+
+    madrinas: {
+      icon: '🎀', label: 'Madrinas de Ceremonia',
+      tiposEvento: ['xv'],
+      campos: [
+        { key:'vestido',      label:'👗 Vestido',         type:'text', ph:'Nombre' },
+        { key:'zapatillas',   label:'👠 Zapatillas',      type:'text', ph:'Nombre' },
+        { key:'corona',       label:'👑 Corona',          type:'text', ph:'Nombre' },
+        { key:'anillo',       label:'💍 Anillo',          type:'text', ph:'Nombre' },
+        { key:'ramo',         label:'💐 Ramo',            type:'text', ph:'Nombre' },
+        { key:'ultima_muneca',label:'🪆 Última muñeca',   type:'text', ph:'Nombre' },
+        { key:'biblia_misal', label:'📖 Biblia/Misal',    type:'text', ph:'Nombre' },
+        { key:'rosario',      label:'📿 Rosario',         type:'text', ph:'Nombre' },
+        { key:'cojin',        label:'🛋️ Cojín',           type:'text', ph:'Nombre' },
+        { key:'maquillaje',   label:'💄 Maquillaje',      type:'text', ph:'Nombre' },
+        { key:'peinado',      label:'💇 Peinado',         type:'text', ph:'Nombre' },
+        { key:'unas',         label:'💅 Uñas',            type:'text', ph:'Nombre' },
+        { key:'aretes',       label:'👂 Aretes',          type:'text', ph:'Nombre' },
+        { key:'collar',       label:'📿 Collar',          type:'text', ph:'Nombre' },
+        { key:'pulsera',      label:'⌚ Pulsera',         type:'text', ph:'Nombre' },
+        { key:'pastel',       label:'🎂 Pastel',          type:'text', ph:'Nombre' },
+        { key:'brindis',      label:'🥂 Brindis',         type:'text', ph:'Nombre' },
+        { key:'vals',         label:'💃 Vals',            type:'text', ph:'Nombre' },
+        { key:'recuerdos',    label:'🎁 Recuerdos',       type:'text', ph:'Nombre' },
+        { key:'centros_mesa', label:'🌸 Centros de mesa', type:'text', ph:'Nombre' },
+        { key:'invitaciones', label:'💌 Invitaciones',    type:'text', ph:'Nombre' },
+        { key:'foto_video',   label:'📸 Foto/Video',      type:'text', ph:'Nombre' },
+        { key:'musica_dj',    label:'🎵 DJ/Música',       type:'text', ph:'Nombre' },
+        { key:'decoracion',   label:'🎨 Decoración',      type:'text', ph:'Nombre' },
+      ]
+    },
+
+    chambelanes: {
+      icon: '🤵', label: 'Chambelanes',
+      tiposEvento: ['xv'],
+      tipo: 'array',
+      keyLista: 'nombres',
+      keyCantidad: 'cantidad',
+      phItem: 'Nombre del chambelán',
+      opciones: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+    },
+
+    damas: {
+      icon: '👗', label: 'Damas de Honor',
+      tiposEvento: ['xv'],
+      tipo: 'array',
+      keyLista: 'nombres',
+      keyCantidad: 'cantidad',
+      phItem: 'Nombre de la dama',
+      opciones: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+    },
+
+    familiares: {
+      icon: '👨‍👩‍👧‍👦', label: 'Familiares Especiales',
+      tiposEvento: ['xv','boda','bautizo','graduacion','cumpleanos'],
+      tipo: 'familiares',
+      parentescos: ['Abuelita','Abuelito','Tía','Tío','Prima','Primo','Hermana','Hermano','Madrina especial','Padrino especial','Amiga especial','Otro'],
+    },
+
+    ceremonia: {
+      icon: '⛪', label: 'Ceremonia Religiosa',
+      campos: [
+        { key:'lugar',    label:'Nombre de la iglesia / capilla', type:'text', ph:'Ej: Capilla Divina Infantita' },
+        { key:'direccion',label:'Dirección completa',             type:'text', ph:'Calle, número, colonia, León, Gto.' },
+        { key:'hora',     label:'Hora de inicio',                 type:'time', ph:'' },
+        { key:'maps_url', label:'Enlace Google Maps',             type:'url',  ph:'https://maps.app.goo.gl/...' },
+      ]
+    },
+
+    recepcion: {
+      icon: '🎉', label: 'Recepción',
+      campos: [
+        { key:'lugar',    label:'Nombre del salón',              type:'text', ph:'Ej: Salón El Portal' },
+        { key:'direccion',label:'Dirección completa',            type:'text', ph:'Calle, número, colonia, León, Gto.' },
+        { key:'hora',     label:'Hora de inicio',                type:'time', ph:'' },
+        { key:'hora_fin', label:'Hora aproximada de cierre',     type:'time', ph:'' },
+        { key:'maps_url', label:'Enlace Google Maps',            type:'url',  ph:'https://maps.app.goo.gl/...' },
+      ]
+    },
+
+    vestimenta: {
+      icon: '👗', label: 'Código de Vestimenta',
+      campos: [
+        { key:'tipo',              label:'Tipo de vestimenta',                    type:'select', opciones:['Formal','Semi-formal','Elegante casual','Etiqueta rigurosa','Libre'] },
+        { key:'colores_reservados',label:'Colores reservados para la festejada', type:'text',   ph:'Ej: Rosa, Blanco' },
+        { key:'nota',              label:'Indicación adicional',                  type:'text',   ph:'Ej: No usar tacones de aguja' },
+      ]
+    },
+
+    sesion: {
+      icon: '📸', label: 'Sesión Fotográfica Previa',
+      campos: [
+        { key:'fecha',         label:'Fecha de la sesión',           type:'date',   ph:'' },
+        { key:'hora',          label:'Hora de inicio',               type:'time',   ph:'' },
+        { key:'lugares',       label:'Lugar(es)',                    type:'text',   ph:'Ej: La Calzada y Templo Expiatorio' },
+        { key:'vestido_listo', label:'¿El vestido ya está listo?',   type:'select', opciones:['Sí, está listo','En proceso','Pendiente de elegir'] },
+      ]
+    },
+
+    video: {
+      icon: '🎬', label: 'Canciones para el Video',
+      campos: [
+        { key:'cancion_entrada',  label:'Canción de entrada al salón',      type:'text',     ph:'Nombre de la canción y artista' },
+        { key:'cancion_vals',     label:'Canción del vals / primer baile',  type:'text',     ph:'Nombre de la canción y artista' },
+        { key:'cancion_brindis',  label:'Canción del brindis',              type:'text',     ph:'Nombre de la canción y artista' },
+        { key:'cancion_pastel',   label:'Canción del pastel',               type:'text',     ph:'Nombre de la canción y artista' },
+        { key:'canciones_no',     label:'Canciones que NO quieres en el video', type:'textarea', ph:'Una por línea' },
+        { key:'estilo_edicion',   label:'Estilo de edición preferido',      type:'select',   opciones:['Cinematográfico','Dinámico / moderno','Clásico / tradicional','Documental / natural'] },
+        { key:'mensaje_video',    label:'Mensaje o dedicatoria para el video', type:'textarea', ph:'Texto que aparecerá en los títulos...' },
+      ]
+    },
+
+    musica_invitacion: {
+      icon: '🎵', label: 'Música de la Invitación Web',
+      campos: [
+        { key:'nombre_cancion', label:'Nombre de la canción',       type:'text', ph:'Ej: A Thousand Years' },
+        { key:'artista',        label:'Artista / Banda',             type:'text', ph:'Ej: Christina Perri' },
+        { key:'generos',        label:'Géneros musicales preferidos',type:'text', ph:'Ej: Regional mexicano, pop, cumbia' },
+      ]
+    },
+
+    invitacion_web: {
+      icon: '💌', label: 'Invitación Digital',
+      campos: [
+        { key:'frase',             label:'Frase personalizada',      type:'textarea', ph:'"Con alegría te invitamos a celebrar..."' },
+        { key:'color_principal',   label:'Color principal',          type:'text',     ph:'Ej: morado, rosa, azul marino' },
+        { key:'limite_confirmacion',label:'Fecha límite de confirmación', type:'date', ph:'' },
+        { key:'max_invitados',     label:'Número estimado de invitados', type:'number', ph:'Ej: 150' },
+      ]
+    },
+
+    contacto: {
+      icon: '📞', label: 'Datos de Contacto',
+      campos: [
+        { key:'nombre_cliente', label:'Nombre completo del cliente', type:'text',  ph:'Nombre legal completo' },
+        { key:'telefono',       label:'Teléfono WhatsApp',           type:'tel',   ph:'477 000 0000' },
+        { key:'email',          label:'Correo electrónico',          type:'email', ph:'correo@ejemplo.com' },
+        { key:'domicilio',      label:'Domicilio',                   type:'text',  ph:'Calle, número, colonia, León, Gto.' },
+      ]
+    },
+  };
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * ESTADO
+   * ═══════════════════════════════════════════════════════════════════ */
+  let eventoId   = null;
+  let eventoTipo = 'xv';
+  let configData = {};
+  let timers     = {};
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * SUPABASE HELPERS
+   * ═══════════════════════════════════════════════════════════════════ */
+  async function sbFetch(path, opts) {
+    const r = await fetch(SB_URL + path, { headers: H, ...opts });
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : [];
+  }
+
+  async function upsertSeccion(seccion, datos) {
+    const existing = await sbFetch(`/rest/v1/eventos_config?evento_id=eq.${eventoId}&seccion=eq.${encodeURIComponent(seccion)}&select=id`);
+    const merged = Object.assign({}, configData[seccion] || {}, datos);
+    if (existing.length) {
+      await sbFetch(`/rest/v1/eventos_config?evento_id=eq.${eventoId}&seccion=eq.${encodeURIComponent(seccion)}`, {
+        method: 'PATCH', body: JSON.stringify({ datos: merged, updated_at: new Date().toISOString() })
+      });
+    } else {
+      await sbFetch('/rest/v1/eventos_config', {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ evento_id: eventoId, seccion, datos: merged, updated_at: new Date().toISOString() })
+      });
+    }
+    configData[seccion] = merged;
+  }
+
+  async function notificarAdmin(seccion, campos) {
+    try {
+      await sbFetch('/rest/v1/notificaciones', {
+        method: 'POST',
+        headers: { ...H, Prefer: 'return=minimal' },
+        body: JSON.stringify({ evento_id: eventoId, tipo: 'datos_actualizados', seccion, campos_actualizados: campos })
+      });
+    } catch (_) {}
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * CARGA DE DATOS
+   * ═══════════════════════════════════════════════════════════════════ */
+  async function cargarDatos(slug) {
+    const evData = await sbFetch(`/rest/v1/eventos?slug=eq.${encodeURIComponent(slug)}&select=id,nombre,tipo,fecha_evento&limit=1`);
+    if (!evData.length) throw new Error('Evento no encontrado: ' + slug);
+    eventoId   = evData[0].id;
+    eventoTipo = evData[0].tipo || 'xv';
+    const cfgData = await sbFetch(`/rest/v1/eventos_config?evento_id=eq.${eventoId}&select=seccion,datos`);
+    configData = {};
+    cfgData.forEach(r => { configData[r.seccion] = r.datos || {}; });
+    return evData[0];
+  }
+
+  function getVal(seccion, key) {
+    const v = (configData[seccion] || {})[key];
+    if (v === null || v === undefined || v === '' || v === 'por_confirmar' || v === 'Por confirmar') return null;
+    return v;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * RENDER
+   * ═══════════════════════════════════════════════════════════════════ */
+  function renderForm(container, nombreEvento) {
+    let html = `
+      <div class="df-header">
+        <h1 class="df-title">📋 Datos del Evento</h1>
+        <p class="df-subtitle">${nombreEvento}</p>
+        <p class="df-hint">Solo se muestran los campos que aún necesitamos. Se guardan automáticamente al dejar de escribir (5 seg).</p>
+      </div>`;
+
+    let hayVacios = false;
+
+    Object.entries(SECCIONES).forEach(([secKey, sec]) => {
+      if (sec.tiposEvento && !sec.tiposEvento.includes(eventoTipo)) return;
+
+      /* ── Secciones de tipo array (chambelanes / damas) ── */
+      if (sec.tipo === 'array') {
+        const cantidad = (configData[secKey] || {})[sec.keyCantidad];
+        const lista    = (configData[secKey] || {})[sec.keyLista] || [];
+        const lleno    = cantidad !== undefined && cantidad !== null && lista.length >= cantidad;
+        if (!lleno) {
+          hayVacios = true;
+          html += renderArraySection(secKey, sec, cantidad, lista);
+        }
+        return;
+      }
+
+      /* ── Sección de familiares (dinámica) ── */
+      if (sec.tipo === 'familiares') {
+        hayVacios = true;
+        html += renderFamiliaresSection(secKey, sec);
+        return;
+      }
+
+      /* ── Secciones de campos normales ── */
+      const camposFiltrados = (sec.campos || []).filter(c => {
+        if (c.tiposEvento && !c.tiposEvento.includes(eventoTipo)) return false;
+        return getVal(secKey, c.key) === null;
+      });
+      if (!camposFiltrados.length) return;
+      hayVacios = true;
+
+      html += `<div class="df-section" id="sec-${secKey}"><h2 class="df-sec-title">${sec.icon} ${sec.label}</h2><div class="df-fields">`;
+      camposFiltrados.forEach(c => { html += renderField(secKey, c); });
+      html += `</div></div>`;
+    });
+
+    if (!hayVacios) {
+      html += `<div class="df-complete"><div class="df-complete-icon">✅</div><p>¡Todo está completo! No hay datos pendientes.</p></div>`;
+    }
+
+    // Botón enviar por WhatsApp al final
+    html += `
+      <div style="text-align:center;margin-top:2rem;padding:1rem">
+        <button class="df-wa-btn" id="btnEnviarWA">📱 Enviar resumen por WhatsApp</button>
+        <p style="font-size:.75rem;opacity:.4;margin-top:.5rem">Los datos ya se guardan automáticamente al escribirlos</p>
+      </div>`;
+
+    container.innerHTML = html;
+    attachListeners(container);
+    attachArrayListeners(container);
+    document.getElementById('btnEnviarWA')?.addEventListener('click', enviarResumenWA);
+  }
+
+  function renderField(seccion, c) {
+    const fid = `df-${seccion}-${c.key}`;
+    let input = '';
+    if (c.type === 'textarea') {
+      input = `<textarea id="${fid}" class="df-input" placeholder="${c.ph||''}" data-seccion="${seccion}" data-key="${c.key}" rows="3"></textarea>`;
+    } else if (c.type === 'select') {
+      input = `<select id="${fid}" class="df-input" data-seccion="${seccion}" data-key="${c.key}"><option value="">— Selecciona —</option>${c.opciones.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    } else {
+      input = `<input type="${c.type}" id="${fid}" class="df-input" placeholder="${c.ph||''}" data-seccion="${seccion}" data-key="${c.key}">`;
+    }
+    return `<div class="df-field" id="wrap-${fid}"><label class="df-label" for="${fid}">${c.label}</label>${input}<span class="df-status" id="st-${fid}"></span></div>`;
+  }
+
+  function renderArraySection(secKey, sec, cantidad, lista) {
+    const cantidadOpts = sec.opciones.map(n => `<option value="${n}" ${n==cantidad?'selected':''}>${n===0?'Sin '+sec.label.toLowerCase():n+' '+sec.label.toLowerCase()}</option>`).join('');
+    let itemsHTML = '';
+    const num = parseInt(cantidad) || 0;
+    for (let i = 0; i < num; i++) {
+      itemsHTML += `<div class="df-array-item"><span class="df-array-num">${i+1}</span><input type="text" class="df-input df-array-input" data-idx="${i}" placeholder="${sec.phItem} ${i+1}" value="${(lista[i]||'').replace(/"/g,'&quot;')}"></div>`;
+    }
+    return `
+      <div class="df-section" id="sec-${secKey}">
+        <h2 class="df-sec-title">${sec.icon} ${sec.label}</h2>
+        <div class="df-field">
+          <label class="df-label">¿Cuántos ${sec.label.toLowerCase()} tendrás?</label>
+          <select class="df-input df-array-select" data-seccion="${secKey}" id="sel-${secKey}">
+            ${cantidadOpts}
+          </select>
+        </div>
+        <div class="df-array-list" id="list-${secKey}">${itemsHTML}</div>
+        <span class="df-status" id="st-${secKey}"></span>
+      </div>`;
+  }
+
+  function renderFamiliaresSection(secKey, sec) {
+    const lista = (configData[secKey] || {}).lista || [];
+    const opciones = sec.parentescos.map(p=>`<option value="${p}">${p}</option>`).join('');
+    let itemsHTML = lista.map((f,i) => `
+      <div class="df-familiar-item" data-idx="${i}">
+        <select class="df-input df-fam-par" style="flex:0 0 150px"><option value="">${f.parentesco}</option>${opciones}</select>
+        <input type="text" class="df-input df-fam-nom" value="${(f.nombre||'').replace(/"/g,'&quot;')}" placeholder="Nombre completo">
+        <button class="df-btn-rem" onclick="this.closest('.df-familiar-item').remove()">✕</button>
+      </div>`).join('');
+    return `
+      <div class="df-section" id="sec-${secKey}">
+        <h2 class="df-sec-title">${sec.icon} ${sec.label}</h2>
+        <p class="df-hint" style="margin-bottom:1rem">Abuelitas, tíos, primos, hermanos u otras personas especiales</p>
+        <div id="list-${secKey}">${itemsHTML}</div>
+        <button class="df-btn-add" onclick="window._DFaddFamiliar('${secKey}')">+ Agregar familiar</button>
+        <span class="df-status" id="st-${secKey}"></span>
+        <div style="margin-top:.8rem">
+          <button class="df-btn-save" onclick="window._DFsaveFamiliares('${secKey}')">💾 Guardar familiares</button>
+        </div>
+      </div>`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * LISTENERS
+   * ═══════════════════════════════════════════════════════════════════ */
+  function attachListeners(container) {
+    container.querySelectorAll('.df-input[data-seccion]').forEach(el => {
+      const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+      el.addEventListener(ev, () => {
+        const seccion = el.dataset.seccion, key = el.dataset.key;
+        const fid = el.id;
+        setStatus(fid, 'saving');
+        clearTimeout(timers[fid]);
+        timers[fid] = setTimeout(() => guardarCampo(fid, seccion, key, el.value.trim()), 5000);
+      });
+    });
+  }
+
+  function attachArrayListeners(container) {
+    container.querySelectorAll('.df-array-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const secKey = sel.dataset.seccion;
+        const num    = parseInt(sel.value);
+        const sec    = SECCIONES[secKey];
+        const lista  = (configData[secKey] || {})[sec.keyLista] || [];
+        let html = '';
+        for (let i = 0; i < num; i++) {
+          html += `<div class="df-array-item"><span class="df-array-num">${i+1}</span><input type="text" class="df-input df-array-input" data-idx="${i}" placeholder="${sec.phItem} ${i+1}" value="${(lista[i]||'').replace(/"/g,'&quot;')}"></div>`;
+        }
+        document.getElementById(`list-${secKey}`).innerHTML = html;
+        clearTimeout(timers[secKey]);
+        setStatus(`st-${secKey}`, 'saving');
+        timers[secKey] = setTimeout(() => guardarArray(secKey, num, lista), 5000);
+        // Re-attach input listeners
+        document.querySelectorAll(`#list-${secKey} .df-array-input`).forEach(inp => {
+          inp.addEventListener('input', () => {
+            clearTimeout(timers[secKey]);
+            setStatus(`st-${secKey}`, 'saving');
+            timers[secKey] = setTimeout(() => {
+              const items = [...document.querySelectorAll(`#list-${secKey} .df-array-input`)].map(i=>i.value.trim());
+              guardarArray(secKey, num, items);
+            }, 5000);
+          });
+        });
+      });
+    });
+  }
+
+  async function guardarCampo(fid, seccion, key, val) {
+    if (!val) { setStatus(fid, ''); return; }
+    setStatus(fid, 'saving');
+    try {
+      await upsertSeccion(seccion, { [key]: val });
+      await notificarAdmin(seccion, [key]);
+      setStatus(fid, 'saved');
+      setTimeout(() => ocultarCampo(fid, seccion), 2000);
+    } catch (e) { setStatus(fid, 'error'); }
+  }
+
+  async function guardarArray(secKey, cantidad, nombres) {
+    setStatus(`st-${secKey}`, 'saving');
+    try {
+      const items = [...document.querySelectorAll(`#list-${secKey} .df-array-input`)].map(i=>i.value.trim());
+      await upsertSeccion(secKey, { cantidad, nombres: items });
+      await notificarAdmin(secKey, ['cantidad','nombres']);
+      setStatus(`st-${secKey}`, 'saved');
+    } catch (e) { setStatus(`st-${secKey}`, 'error'); }
+  }
+
+  // Familiares
+  window._DFaddFamiliar = function(secKey) {
+    const sec = SECCIONES[secKey];
+    const opciones = sec.parentescos.map(p=>`<option value="${p}">${p}</option>`).join('');
+    const div = document.createElement('div');
+    div.className = 'df-familiar-item';
+    div.innerHTML = `<select class="df-input df-fam-par" style="flex:0 0 150px"><option value="">Parentesco</option>${opciones}</select><input type="text" class="df-input df-fam-nom" placeholder="Nombre completo"><button class="df-btn-rem" onclick="this.closest('.df-familiar-item').remove()">✕</button>`;
+    document.getElementById(`list-${secKey}`).appendChild(div);
+  };
+
+  window._DFsaveFamiliares = async function(secKey) {
+    const items = [...document.querySelectorAll(`#list-${secKey} .df-familiar-item`)].map(item => ({
+      parentesco: item.querySelector('.df-fam-par').value,
+      nombre:     item.querySelector('.df-fam-nom').value.trim()
+    })).filter(f => f.nombre);
+    setStatus(`st-${secKey}`, 'saving');
+    try {
+      await upsertSeccion(secKey, { lista: items });
+      await notificarAdmin(secKey, ['lista']);
+      setStatus(`st-${secKey}`, 'saved');
+    } catch (e) { setStatus(`st-${secKey}`, 'error'); }
+  };
+
+  function ocultarCampo(fid, seccion) {
+    const wrap = document.getElementById(`wrap-${fid}`);
+    if (wrap) { wrap.style.transition='opacity .5s'; wrap.style.opacity='0'; setTimeout(()=>{ wrap.remove(); checkSeccionVacia(seccion); },500); }
+  }
+
+  function checkSeccionVacia(seccion) {
+    const sec = document.getElementById(`sec-${seccion}`);
+    if (sec && !sec.querySelectorAll('.df-field').length) {
+      sec.style.transition='opacity .5s'; sec.style.opacity='0'; setTimeout(()=>sec.remove(),500);
+    }
+  }
+
+  function setStatus(id, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const map = { saving:'⏳ Guardando en 5s…', saved:'✅ Guardado', error:'❌ Error', '':'' };
+    el.textContent = map[state]||'';
+    el.className = 'df-status df-status-'+state;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * RESUMEN POR WHATSAPP
+   * ═══════════════════════════════════════════════════════════════════ */
+  function enviarResumenWA() {
+    let msg = '📋 *DATOS DEL EVENTO*\n━━━━━━━━━━━━━━━━━━━━\n\n';
+    Object.entries(configData).forEach(([sec, datos]) => {
+      if (!datos || !Object.keys(datos).length) return;
+      const secDef = SECCIONES[sec];
+      msg += `${secDef?.icon||'•'} *${(secDef?.label||sec).toUpperCase()}*\n`;
+      if (Array.isArray(datos.nombres)) {
+        datos.nombres.forEach((n,i) => { if(n) msg += `  ${i+1}. ${n}\n`; });
+      } else if (Array.isArray(datos.lista)) {
+        datos.lista.forEach(f => { msg += `  ${f.parentesco}: ${f.nombre}\n`; });
+      } else {
+        Object.entries(datos).forEach(([k,v]) => { if(v && k!=='cantidad') msg += `  ${k}: ${v}\n`; });
+      }
+      msg += '\n';
+    });
+    msg += '─────────────────────\nEnviado desde invitados.org';
+    window.open('https://wa.me/524779203776?text='+encodeURIComponent(msg), '_blank');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * CSS
+   * ═══════════════════════════════════════════════════════════════════ */
+  function injectCSS() {
+    const s = document.createElement('style');
+    s.textContent = `
+      .df-header{text-align:center;padding:2rem 1rem 1rem}
+      .df-title{font-size:clamp(1.4rem,5vw,2rem);margin:0 0 .4rem}
+      .df-subtitle{font-size:1.1rem;opacity:.7;margin:0 0 .4rem}
+      .df-hint{font-size:.82rem;opacity:.45;margin:0}
+      .df-section{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;margin:1.5rem 0}
+      .df-sec-title{font-size:1.05rem;margin:0 0 1.2rem;letter-spacing:.04em}
+      .df-fields{display:grid;gap:1rem}
+      .df-field{display:flex;flex-direction:column;gap:.35rem}
+      .df-label{font-size:.82rem;opacity:.65;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+      .df-input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.7rem 1rem;color:inherit;font-size:.95rem;font-family:inherit;transition:border .2s;width:100%;box-sizing:border-box}
+      .df-input:focus{outline:none;border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.15)}
+      select.df-input option{background:#1a0a2e;color:#fff}
+      textarea.df-input{resize:vertical;min-height:80px}
+      .df-status{font-size:.75rem;min-height:1rem}
+      .df-status-saving{color:#fbbf24}.df-status-saved{color:#34d399}.df-status-error{color:#f87171}
+      .df-array-item{display:flex;gap:.6rem;align-items:center;margin:.4rem 0}
+      .df-array-num{font-weight:700;opacity:.5;min-width:20px;text-align:right}
+      .df-array-input{flex:1}
+      .df-familiar-item{display:flex;gap:.5rem;align-items:center;margin:.4rem 0;flex-wrap:wrap}
+      .df-fam-par{flex:0 0 145px}
+      .df-fam-nom{flex:1;min-width:150px}
+      .df-btn-rem{background:#7f1d1d;border:none;color:#fca5a5;border-radius:8px;padding:.4rem .7rem;cursor:pointer;font-size:.85rem}
+      .df-btn-add{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:inherit;border-radius:10px;padding:.6rem 1.2rem;cursor:pointer;margin-top:.8rem;font-size:.9rem;width:100%}
+      .df-btn-save{background:#4c1d95;border:1px solid #7c3aed;color:#c4b5fd;border-radius:10px;padding:.6rem 1.4rem;cursor:pointer;font-size:.9rem}
+      .df-wa-btn{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:30px;padding:1rem 2.5rem;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s;box-shadow:0 4px 15px rgba(37,211,102,.3)}
+      .df-wa-btn:hover{transform:translateY(-2px)}
+      .df-complete{text-align:center;padding:3rem 1rem}
+      .df-complete-icon{font-size:3rem;margin-bottom:.8rem}
+      @media(max-width:500px){.df-familiar-item{flex-direction:column;align-items:stretch}.df-fam-par{flex:none}}
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+   * API PÚBLICA
+   * ═══════════════════════════════════════════════════════════════════ */
+  window.DatosForm = {
+    async init(slug, containerId) {
+      injectCSS();
+      const container = document.getElementById(containerId);
+      container.innerHTML = '<p style="text-align:center;opacity:.5;padding:3rem">Cargando...</p>';
+      try {
+        const ev = await cargarDatos(slug);
+        renderForm(container, ev.nombre);
+      } catch (e) {
+        container.innerHTML = `<p style="color:#f87171;text-align:center;padding:2rem">Error: ${e.message}</p>`;
+      }
+    }
+  };
+})();
