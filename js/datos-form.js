@@ -261,7 +261,20 @@
     let total = 0, llenos = 0;
     Object.entries(SECCIONES).forEach(([secKey, sec]) => {
       if (sec.tiposEvento && !sec.tiposEvento.includes(eventoTipo)) return;
-      if (sec.tipo === 'array' || sec.tipo === 'familiares') { total++; if ((configData[secKey]||{}).lista?.length || (configData[secKey]||{}).nombres?.length) llenos++; return; }
+      if (sec.tipo === 'array') {
+        total++;
+        const d = configData[secKey] || {};
+        // cantidad=0 (sin chambelanes/damas) también cuenta como resuelto
+        if (d[sec.keyCantidad] === 0 || (d[sec.keyLista]||[]).length > 0) llenos++;
+        return;
+      }
+      if (sec.tipo === 'familiares') {
+        total++;
+        const d = configData[secKey] || {};
+        // lista vacía explícita (guardada con []) también cuenta como resuelto
+        if (Array.isArray(d.lista)) llenos++;
+        return;
+      }
       (sec.campos||[]).forEach(c => {
         if (c.tiposEvento && !c.tiposEvento.includes(eventoTipo)) return;
         total++;
@@ -305,9 +318,10 @@
     grupos.forEach(({secKey, sec, items}) => {
       html += `<div class="df-sum-sec"><h3 class="df-sum-sec-title">${sec.icon} ${sec.label}</h3>`;
       items.forEach(item => {
-        const shortVal = String(item.val).length > 100 ? String(item.val).substring(0,97)+'…' : item.val;
-        const editBtn = item.editable ? `<button class="df-sum-edit" onclick="window._DFedit('${item.seccion}','${item.key}')">✏️</button>` : '';
-        html += `<div class="df-sum-field" id="sumwrap-${secKey}-${item.key}" data-label="${item.label.replace(/"/g,'&quot;')}">
+        const isNA = item.val === 'N/A';
+        const shortVal = isNA ? '— No aplica' : (String(item.val).length > 100 ? String(item.val).substring(0,97)+'…' : item.val);
+        const editBtn = item.editable ? `<button class="df-sum-edit" onclick="window._DFedit('${item.seccion}','${item.key}')" title="Editar">✏️</button>` : '';
+        html += `<div class="df-sum-field${isNA?' df-sum-na':''}" id="sumwrap-${secKey}-${item.key}" data-label="${item.label.replace(/"/g,'&quot;')}">
           <span class="df-sum-label">${item.label}</span>
           <span class="df-sum-val">${shortVal}</span>${editBtn}
         </div>`;
@@ -425,8 +439,51 @@
     const wrap  = document.getElementById(`sumwrap-${seccion}-${key}`);
     const label = wrap?.dataset?.label || key;
     const val   = getVal(seccion, key) || '';
-    const shortVal = val.length > 100 ? val.substring(0,97)+'…' : val;
-    if (wrap) wrap.innerHTML = `<span class="df-sum-label">${label}</span><span class="df-sum-val">${shortVal}</span><button class="df-sum-edit" onclick="window._DFedit('${seccion}','${key}')">✏️</button>`;
+    const isNA  = val === 'N/A';
+    const shortVal = isNA ? '— No aplica' : (val.length > 100 ? val.substring(0,97)+'…' : val);
+    if (wrap) {
+      wrap.className = 'df-sum-field' + (isNA ? ' df-sum-na' : '');
+      wrap.innerHTML = `<span class="df-sum-label">${label}</span><span class="df-sum-val">${shortVal}</span><button class="df-sum-edit" onclick="window._DFedit('${seccion}','${key}')" title="Editar">✏️</button>`;
+    }
+  };
+
+  /** Marca un campo como "No aplica" — cuenta como resuelto y sube al bloque Ya tenemos */
+  window._DFnoAplica = async function(seccion, key, fid) {
+    clearTimeout(timers[fid]);
+    setStatus(fid, 'saving');
+    try {
+      await upsertSeccion(seccion, { [key]: 'N/A' });
+      await notificarAdmin(seccion, [key]);
+      setStatus(fid, 'saved');
+      // Mueve al bloque "Ya tenemos" con estilo N/A
+      const wrap = document.getElementById(`wrap-${fid}`);
+      const label = wrap?.querySelector('.df-label')?.textContent || key;
+      // Inserta en el resumen si ya está renderizado
+      const sumBody = document.querySelector('.df-sum-body');
+      if (sumBody) {
+        // Busca la sección o crea una entrada al final
+        let sumSecEl = document.getElementById(`sumwrap-${seccion}-${key}`);
+        if (!sumSecEl) {
+          // Agrega al final del resumen
+          const newItem = document.createElement('div');
+          newItem.className = 'df-sum-field df-sum-na';
+          newItem.id = `sumwrap-${seccion}-${key}`;
+          newItem.dataset.label = label;
+          newItem.innerHTML = `<span class="df-sum-label">${label}</span><span class="df-sum-val">— No aplica</span><button class="df-sum-edit" onclick="window._DFedit('${seccion}','${key}')" title="Editar">✏️</button>`;
+          sumBody.appendChild(newItem);
+        }
+      }
+      // Actualiza barra de progreso
+      setTimeout(() => {
+        const {total, llenos} = contarCampos();
+        const pct = total ? Math.round(llenos/total*100) : 0;
+        const fill = document.querySelector('.df-progress-fill');
+        const lbl  = document.querySelector('.df-progress-label');
+        if (fill) fill.style.width = pct+'%';
+        if (lbl)  lbl.textContent = `${llenos} de ${total} campos completados (${pct}%)`;
+        ocultarCampo(fid, seccion);
+      }, 1500);
+    } catch(e) { setStatus(fid, 'error'); }
   };
 
   function renderField(seccion, c) {
@@ -439,7 +496,8 @@
     } else {
       input = `<input type="${c.type}" id="${fid}" class="df-input" placeholder="${c.ph||''}" data-seccion="${seccion}" data-key="${c.key}">`;
     }
-    return `<div class="df-field" id="wrap-${fid}"><label class="df-label" for="${fid}">${c.label}</label>${input}<span class="df-status" id="st-${fid}"></span></div>`;
+    const naId = `na-${seccion}-${c.key}`;
+    return `<div class="df-field" id="wrap-${fid}"><label class="df-label" for="${fid}">${c.label}</label>${input}<span class="df-status" id="st-${fid}"></span><button class="df-na-btn" id="${naId}" onclick="window._DFnoAplica('${seccion}','${c.key}','${fid}')">↩ No tengo / No aplica</button></div>`;
   }
 
   function renderArraySection(secKey, sec, cantidad, lista) {
@@ -538,8 +596,18 @@
       await upsertSeccion(seccion, { [key]: val });
       await notificarAdmin(seccion, [key]);
       setStatus(fid, 'saved');
+      actualizarProgreso();
       setTimeout(() => ocultarCampo(fid, seccion), 2000);
     } catch (e) { setStatus(fid, 'error'); }
+  }
+
+  function actualizarProgreso() {
+    const {total, llenos} = contarCampos();
+    const pct = total ? Math.round(llenos/total*100) : 0;
+    const fill = document.querySelector('.df-progress-fill');
+    const lbl  = document.querySelector('.df-progress-label');
+    if (fill) fill.style.width = pct+'%';
+    if (lbl)  lbl.textContent = `${llenos} de ${total} campos completados (${pct}%)`;
   }
 
   async function guardarArray(secKey, cantidad, nombres) {
@@ -666,6 +734,10 @@
       .df-sum-val{font-size:.9rem;grid-column:1;word-break:break-word;white-space:pre-wrap;line-height:1.4}
       .df-sum-edit{background:none;border:none;cursor:pointer;font-size:.85rem;opacity:.4;padding:0;align-self:start;margin-top:2px;transition:opacity .2s}
       .df-sum-edit:hover{opacity:1}
+      .df-na-btn{background:none;border:none;color:rgba(255,255,255,.3);font-size:.72rem;cursor:pointer;padding:.2rem 0;text-align:left;letter-spacing:.02em;transition:color .2s;margin-top:.1rem}
+      .df-na-btn:hover{color:rgba(255,255,255,.6)}
+      .df-sum-na .df-sum-val{opacity:.35;font-style:italic}
+      .df-sum-na .df-sum-label{opacity:.3}
       .df-pending-hdr{margin:2rem 0 .8rem;font-size:.9rem;font-weight:700;opacity:.7;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
       .df-pending-hint{font-size:.75rem;font-weight:400;opacity:.5}
       .df-complete{text-align:center;padding:3rem 1rem}
