@@ -255,67 +255,179 @@
   /* ═══════════════════════════════════════════════════════════════════
    * RENDER
    * ═══════════════════════════════════════════════════════════════════ */
-  function renderForm(container, nombreEvento) {
-    let html = `
-      <div class="df-header">
-        <h1 class="df-title">📋 Datos del Evento</h1>
-        <p class="df-subtitle">${nombreEvento}</p>
-        <p class="df-hint">Solo se muestran los campos que aún necesitamos. Se guardan automáticamente al dejar de escribir (5 seg).</p>
-      </div>`;
 
-    let hayVacios = false;
-
+  /** Cuenta todos los campos aplicables a este tipo de evento */
+  function contarCampos() {
+    let total = 0, llenos = 0;
     Object.entries(SECCIONES).forEach(([secKey, sec]) => {
       if (sec.tiposEvento && !sec.tiposEvento.includes(eventoTipo)) return;
+      if (sec.tipo === 'array' || sec.tipo === 'familiares') { total++; if ((configData[secKey]||{}).lista?.length || (configData[secKey]||{}).nombres?.length) llenos++; return; }
+      (sec.campos||[]).forEach(c => {
+        if (c.tiposEvento && !c.tiposEvento.includes(eventoTipo)) return;
+        total++;
+        if (getVal(secKey, c.key) !== null) llenos++;
+      });
+    });
+    return { total, llenos };
+  }
 
-      /* ── Secciones de tipo array (chambelanes / damas) ── */
+  /** Bloque "Ya tenemos" — datos llenos, editables con ✏️ */
+  function renderSummary() {
+    let grupos = [];
+    Object.entries(SECCIONES).forEach(([secKey, sec]) => {
+      if (sec.tiposEvento && !sec.tiposEvento.includes(eventoTipo)) return;
+      let items = [];
+      if (sec.tipo === 'array') {
+        const d = configData[secKey] || {};
+        const lista = d[sec.keyLista] || [];
+        if (d[sec.keyCantidad] !== undefined && lista.length) {
+          items.push({ key:'_array', label: sec.label, val: lista.filter(Boolean).join(', '), editable: false });
+        }
+      } else if (sec.tipo === 'familiares') {
+        const lista = (configData[secKey]||{}).lista || [];
+        if (lista.length) {
+          items.push({ key:'_fam', label: sec.label, val: lista.map(f=>`${f.parentesco}: ${f.nombre}`).join(' · '), editable: false });
+        }
+      } else {
+        (sec.campos||[]).forEach(c => {
+          if (c.tiposEvento && !c.tiposEvento.includes(eventoTipo)) return;
+          const v = getVal(secKey, c.key);
+          if (v !== null) items.push({ seccion: secKey, key: c.key, label: c.label, val: v, type: c.type, opciones: c.opciones, editable: true });
+        });
+      }
+      if (items.length) grupos.push({ secKey, sec, items });
+    });
+
+    if (!grupos.length) return '';
+    const totalLlenos = grupos.reduce((s,g) => s + g.items.length, 0);
+
+    let html = `<details class="df-summary" open><summary class="df-sum-hdr">✅ Ya tenemos <strong>${totalLlenos}</strong> dato${totalLlenos!==1?'s':''} <span class="df-sum-toggle">▾</span></summary><div class="df-sum-body">`;
+    grupos.forEach(({secKey, sec, items}) => {
+      html += `<div class="df-sum-sec"><h3 class="df-sum-sec-title">${sec.icon} ${sec.label}</h3>`;
+      items.forEach(item => {
+        const shortVal = String(item.val).length > 100 ? String(item.val).substring(0,97)+'…' : item.val;
+        const editBtn = item.editable ? `<button class="df-sum-edit" onclick="window._DFedit('${item.seccion}','${item.key}')">✏️</button>` : '';
+        html += `<div class="df-sum-field" id="sumwrap-${secKey}-${item.key}" data-label="${item.label.replace(/"/g,'&quot;')}">
+          <span class="df-sum-label">${item.label}</span>
+          <span class="df-sum-val">${shortVal}</span>${editBtn}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div></details>`;
+    return html;
+  }
+
+  /** Bloque "Pendientes" — campos vacíos editables */
+  function renderPending() {
+    let html = '', hayVacios = false;
+    Object.entries(SECCIONES).forEach(([secKey, sec]) => {
+      if (sec.tiposEvento && !sec.tiposEvento.includes(eventoTipo)) return;
       if (sec.tipo === 'array') {
         const cantidad = (configData[secKey] || {})[sec.keyCantidad];
         const lista    = (configData[secKey] || {})[sec.keyLista] || [];
         const lleno    = cantidad !== undefined && cantidad !== null && lista.length >= cantidad;
-        if (!lleno) {
-          hayVacios = true;
-          html += renderArraySection(secKey, sec, cantidad, lista);
-        }
+        if (!lleno) { hayVacios = true; html += renderArraySection(secKey, sec, cantidad, lista); }
         return;
       }
-
-      /* ── Sección de familiares (dinámica) ── */
-      if (sec.tipo === 'familiares') {
-        hayVacios = true;
-        html += renderFamiliaresSection(secKey, sec);
-        return;
-      }
-
-      /* ── Secciones de campos normales ── */
+      if (sec.tipo === 'familiares') { hayVacios = true; html += renderFamiliaresSection(secKey, sec); return; }
       const camposFiltrados = (sec.campos || []).filter(c => {
         if (c.tiposEvento && !c.tiposEvento.includes(eventoTipo)) return false;
         return getVal(secKey, c.key) === null;
       });
       if (!camposFiltrados.length) return;
       hayVacios = true;
-
       html += `<div class="df-section" id="sec-${secKey}"><h2 class="df-sec-title">${sec.icon} ${sec.label}</h2><div class="df-fields">`;
       camposFiltrados.forEach(c => { html += renderField(secKey, c); });
       html += `</div></div>`;
     });
+    return { html, hayVacios };
+  }
 
-    if (!hayVacios) {
-      html += `<div class="df-complete"><div class="df-complete-icon">✅</div><p>¡Todo está completo! No hay datos pendientes.</p></div>`;
+  function renderForm(container, nombreEvento) {
+    const { total, llenos } = contarCampos();
+    const pct = total ? Math.round(llenos / total * 100) : 0;
+    const pendientes = total - llenos;
+
+    let html = `
+      <div class="df-header">
+        <h1 class="df-title">📋 Datos del Evento</h1>
+        <p class="df-subtitle">${nombreEvento}</p>
+        <div class="df-progress-bar"><div class="df-progress-fill" style="width:${pct}%"></div></div>
+        <p class="df-progress-label">${llenos} de ${total} campos completados (${pct}%)</p>
+      </div>`;
+
+    html += renderSummary();
+
+    const { html: pendHtml, hayVacios } = renderPending();
+    if (hayVacios) {
+      html += `<div class="df-pending-hdr">📝 Pendientes — ${pendientes} campo${pendientes!==1?'s':''} por llenar <span class="df-pending-hint">Se guardan solos a los 5 seg de escribir</span></div>`;
+      html += pendHtml;
+    } else {
+      html += `<div class="df-complete"><div class="df-complete-icon">🎉</div><p>¡Todo está completo! No hay datos pendientes.</p></div>`;
     }
 
-    // Botón enviar por WhatsApp al final
-    html += `
-      <div style="text-align:center;margin-top:2rem;padding:1rem">
-        <button class="df-wa-btn" id="btnEnviarWA">📱 Enviar resumen por WhatsApp</button>
-        <p style="font-size:.75rem;opacity:.4;margin-top:.5rem">Los datos ya se guardan automáticamente al escribirlos</p>
-      </div>`;
+    html += `<div style="text-align:center;margin-top:2rem;padding:1rem">
+      <button class="df-wa-btn" id="btnEnviarWA">📱 Enviar resumen por WhatsApp</button>
+      <p style="font-size:.75rem;opacity:.4;margin-top:.5rem">Los datos ya se guardan automáticamente al escribirlos</p>
+    </div>`;
 
     container.innerHTML = html;
     attachListeners(container);
     attachArrayListeners(container);
     document.getElementById('btnEnviarWA')?.addEventListener('click', enviarResumenWA);
   }
+
+  /* ── Edición inline desde el bloque "Ya tenemos" ── */
+  window._DFedit = function(seccion, key) {
+    const wrap = document.getElementById(`sumwrap-${seccion}-${key}`);
+    if (!wrap) return;
+    const label = wrap.dataset.label;
+    const val   = getVal(seccion, key) || '';
+    const campo = (SECCIONES[seccion]?.campos||[]).find(c=>c.key===key);
+    if (!campo) return;
+    const fid = `dfedit-${seccion}-${key}`;
+    let inp = '';
+    if (campo.type === 'textarea') {
+      inp = `<textarea id="${fid}" class="df-input" rows="3">${val}</textarea>`;
+    } else if (campo.type === 'select') {
+      inp = `<select id="${fid}" class="df-input">${campo.opciones.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
+    } else {
+      inp = `<input type="${campo.type}" id="${fid}" class="df-input" value="${val.replace(/"/g,'&quot;')}">`;
+    }
+    wrap.innerHTML = `<span class="df-sum-label">${label}</span>${inp}<span class="df-status" id="st-${fid}"></span>
+      <div style="display:flex;gap:.5rem;margin-top:.4rem">
+        <button class="df-btn-save" onclick="window._DFsaveEdit('${seccion}','${key}','${fid}')">💾 Guardar</button>
+        <button class="df-btn-rem" onclick="window._DFcancelEdit('${seccion}','${key}')">Cancelar</button>
+      </div>`;
+  };
+
+  window._DFsaveEdit = async function(seccion, key, fid) {
+    const el  = document.getElementById(fid);
+    const stEl = document.getElementById(`st-${fid}`);
+    if (!el) return;
+    const val = el.value.trim();
+    if (!val) return;
+    if (stEl) { stEl.textContent = '⏳ Guardando…'; stEl.className = 'df-status df-status-saving'; }
+    try {
+      await upsertSeccion(seccion, { [key]: val });
+      await notificarAdmin(seccion, [key]);
+      const wrap  = document.getElementById(`sumwrap-${seccion}-${key}`);
+      const label = wrap?.dataset?.label || key;
+      const shortVal = val.length > 100 ? val.substring(0,97)+'…' : val;
+      if (wrap) wrap.innerHTML = `<span class="df-sum-label">${label}</span><span class="df-sum-val">${shortVal}</span><button class="df-sum-edit" onclick="window._DFedit('${seccion}','${key}')">✏️</button>`;
+    } catch(e) {
+      if (stEl) { stEl.textContent = '❌ Error'; stEl.className = 'df-status df-status-error'; }
+    }
+  };
+
+  window._DFcancelEdit = function(seccion, key) {
+    const wrap  = document.getElementById(`sumwrap-${seccion}-${key}`);
+    const label = wrap?.dataset?.label || key;
+    const val   = getVal(seccion, key) || '';
+    const shortVal = val.length > 100 ? val.substring(0,97)+'…' : val;
+    if (wrap) wrap.innerHTML = `<span class="df-sum-label">${label}</span><span class="df-sum-val">${shortVal}</span><button class="df-sum-edit" onclick="window._DFedit('${seccion}','${key}')">✏️</button>`;
+  };
 
   function renderField(seccion, c) {
     const fid = `df-${seccion}-${c.key}`;
@@ -537,9 +649,28 @@
       .df-btn-save{background:#4c1d95;border:1px solid #7c3aed;color:#c4b5fd;border-radius:10px;padding:.6rem 1.4rem;cursor:pointer;font-size:.9rem}
       .df-wa-btn{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:30px;padding:1rem 2.5rem;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .2s;box-shadow:0 4px 15px rgba(37,211,102,.3)}
       .df-wa-btn:hover{transform:translateY(-2px)}
+      .df-progress-bar{background:rgba(255,255,255,.1);border-radius:20px;height:8px;margin:.8rem auto;max-width:400px;overflow:hidden}
+      .df-progress-fill{height:100%;background:linear-gradient(90deg,#34d399,#6ee7b7);border-radius:20px;transition:width .6s}
+      .df-progress-label{font-size:.82rem;opacity:.5;margin:0}
+      .df-summary{background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.25);border-radius:16px;margin:1.5rem 0;overflow:hidden}
+      .df-sum-hdr{padding:1rem 1.4rem;cursor:pointer;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;list-style:none;user-select:none}
+      .df-sum-hdr::-webkit-details-marker{display:none}
+      .df-sum-toggle{opacity:.5;font-size:.8rem}
+      details.df-summary[open] .df-sum-toggle{transform:rotate(180deg)}
+      .df-sum-body{padding:.5rem 1.4rem 1.2rem;border-top:1px solid rgba(52,211,153,.15)}
+      .df-sum-sec{margin-top:1rem}
+      .df-sum-sec-title{font-size:.82rem;opacity:.5;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .6rem}
+      .df-sum-field{display:grid;grid-template-columns:1fr auto auto;align-items:start;gap:.4rem .8rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+      .df-sum-field:last-child{border-bottom:none}
+      .df-sum-label{font-size:.78rem;opacity:.5;grid-column:1;align-self:center}
+      .df-sum-val{font-size:.9rem;grid-column:1;word-break:break-word;white-space:pre-wrap;line-height:1.4}
+      .df-sum-edit{background:none;border:none;cursor:pointer;font-size:.85rem;opacity:.4;padding:0;align-self:start;margin-top:2px;transition:opacity .2s}
+      .df-sum-edit:hover{opacity:1}
+      .df-pending-hdr{margin:2rem 0 .8rem;font-size:.9rem;font-weight:700;opacity:.7;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+      .df-pending-hint{font-size:.75rem;font-weight:400;opacity:.5}
       .df-complete{text-align:center;padding:3rem 1rem}
       .df-complete-icon{font-size:3rem;margin-bottom:.8rem}
-      @media(max-width:500px){.df-familiar-item{flex-direction:column;align-items:stretch}.df-fam-par{flex:none}}
+      @media(max-width:500px){.df-familiar-item{flex-direction:column;align-items:stretch}.df-fam-par{flex:none}.df-sum-field{grid-template-columns:1fr auto}}
     `;
     document.head.appendChild(s);
   }
