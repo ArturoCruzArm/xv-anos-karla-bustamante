@@ -19,13 +19,17 @@
       icon: '👑', label: 'Protagonistas',
       tiposEvento: ['xv','boda','bautizo','graduacion','cumpleanos','otro'],
       campos: [
-        { key:'nombre',       label:'Nombre completo de la festejada/o', type:'text',     ph:'Ej: Sheilyn Guadalupe Herrera Reynoso' },
+        { key:'nombre',       label:'Nombre de la quinceañera',           type:'text',     ph:'Ej: Sheilyn Guadalupe Herrera Reynoso', tiposEvento:['xv'] },
+        { key:'nombre',       label:'Nombre de la novia',                type:'text',     ph:'Ej: Patricia Berenice Martínez',        tiposEvento:['boda'] },
+        { key:'nombre',       label:'Nombre del festejado/a',            type:'text',     ph:'Nombre completo',                       tiposEvento:['bautizo','cumpleanos','graduacion','otro'] },
         { key:'fecha_nac',    label:'Fecha de nacimiento',               type:'date',     ph:'',                                      tiposEvento:['xv','bautizo','cumpleanos'] },
         { key:'nombre_2',     label:'Nombre del novio',                  type:'text',     ph:'Ej: Carlos Eduardo López',              tiposEvento:['boda'] },
-        { key:'nombre_madre', label:'Nombre completo de la mamá',        type:'text',     ph:'Ej: María Concepción Reynoso Cuevas' },
-        { key:'nombre_padre', label:'Nombre completo del papá',          type:'text',     ph:'Ej: Roberto Herrera García' },
-        { key:'nombre_madre_novio', label:'Nombre de la mamá del novio', type:'text',     ph:'Para boda',                             tiposEvento:['boda'] },
-        { key:'nombre_padre_novio', label:'Nombre del papá del novio',   type:'text',     ph:'Para boda',                             tiposEvento:['boda'] },
+        { key:'nombre_madre', label:'Nombre completo de la mamá de la quinceañera', type:'text', ph:'Ej: María Concepción Reynoso Cuevas', tiposEvento:['xv','bautizo','cumpleanos','graduacion','otro'] },
+        { key:'nombre_padre', label:'Nombre completo del papá de la quinceañera', type:'text', ph:'Ej: Roberto Herrera García',        tiposEvento:['xv','bautizo','cumpleanos','graduacion','otro'] },
+        { key:'nombre_madre', label:'Nombre completo de la mamá de la novia',     type:'text', ph:'Ej: Patricia Becerra Pacheco',      tiposEvento:['boda'] },
+        { key:'nombre_padre', label:'Nombre completo del papá de la novia',       type:'text', ph:'Ej: Ramón Martínez Espinoza',       tiposEvento:['boda'] },
+        { key:'nombre_madre_novio', label:'Nombre de la mamá del novio',          type:'text', ph:'Ej: Erika Fabiola Huerta',          tiposEvento:['boda'] },
+        { key:'nombre_padre_novio', label:'Nombre del papá del novio',            type:'text', ph:'Ej: Joaquin Cordova Camarillo',     tiposEvento:['boda'] },
         { key:'mensaje_especial',   label:'Mensaje o frase especial',    type:'textarea', ph:'"Hoy comienza un nuevo capítulo..."' },
       ]
     },
@@ -167,9 +171,11 @@
     vestimenta: {
       icon: '👗', label: 'Código de Vestimenta',
       campos: [
-        { key:'tipo',              label:'Tipo de vestimenta',                    type:'select', opciones:['Formal','Semi-formal','Elegante casual','Etiqueta rigurosa','Libre'] },
-        { key:'colores_reservados',label:'Colores reservados para la festejada', type:'text',   ph:'Ej: Rosa, Blanco' },
-        { key:'nota',              label:'Indicación adicional',                  type:'text',   ph:'Ej: No usar tacones de aguja' },
+        { key:'tipo',              label:'Tipo de vestimenta',                             type:'select', opciones:['Formal','Semi-formal','Elegante casual','Etiqueta rigurosa','Libre'] },
+        { key:'colores_reservados',label:'Colores reservados para la quinceañera',      type:'text',   ph:'Ej: Rosa, Lila',      tiposEvento:['xv'] },
+        { key:'colores_reservados',label:'Colores reservados (blanco exclusivo novia)',  type:'text',   ph:'Ej: Blanco, Marfil',  tiposEvento:['boda'] },
+        { key:'colores_reservados',label:'Colores reservados para el festejado/a',       type:'text',   ph:'Ej: Azul rey',        tiposEvento:['bautizo','cumpleanos','graduacion','otro'] },
+        { key:'nota',              label:'Indicación adicional',                         type:'text',   ph:'Ej: No usar tacones de aguja' },
       ]
     },
 
@@ -179,7 +185,8 @@
         { key:'fecha',         label:'Fecha de la sesión',           type:'date',   ph:'' },
         { key:'hora',          label:'Hora de inicio',               type:'time',   ph:'' },
         { key:'lugares',       label:'Lugar(es)',                    type:'text',   ph:'Ej: La Calzada y Templo Expiatorio' },
-        { key:'vestido_listo', label:'¿El vestido ya está listo?',   type:'select', opciones:['Sí, está listo','En proceso','Pendiente de elegir'] },
+        { key:'vestido_listo', label:'¿El vestido de quinceañera ya está listo?', type:'select', opciones:['Sí, está listo','En proceso','Pendiente de elegir'], tiposEvento:['xv'] },
+        { key:'vestido_listo', label:'¿El vestido de novia ya está listo?',      type:'select', opciones:['Sí, está listo','En proceso','Pendiente de elegir'], tiposEvento:['boda'] },
       ]
     },
 
