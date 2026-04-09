@@ -1179,5 +1179,35 @@
         else attachHandler();
     })();
     </script>
+<script>
+(function(){
+    var token = new URLSearchParams(window.location.search).get('inv');
+    if (!token) return;
+    var SB_URL  = 'https://nzpujmlienzfetqcgsxz.supabase.co';
+    var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56cHVqbWxpZW56ZmV0cWNnc3h6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYzMzYsImV4cCI6MjA5MDI2MjMzNn0.xl3lsb-KYj5tVLKTnzpbsdEGoV9ySnswH4eyRuyEH1s';
+    fetch(SB_URL + '/rest/v1/invitados?token=eq.' + encodeURIComponent(token) + '&select=nombre,pases_asignados&limit=1', {
+        headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+        if (!rows || !rows.length) return;
+        var g = rows[0];
+        // Personalizar el envelope splash
+        var sub = document.querySelector('.env-sub');
+        if (sub) sub.textContent = '🌷 Para: ' + g.nombre + ' 🌷';
+        // Llenar campos de bienvenida en RSVP
+        var welcome = document.getElementById('guestWelcomeText');
+        if (welcome) welcome.textContent = '¡Hola, ' + g.nombre + '!';
+        var passes = document.getElementById('guestPassesText');
+        if (passes) passes.textContent = '🎟 ' + g.pases_asignados + ' ' + (g.pases_asignados === 1 ? 'pase' : 'pases');
+        // Pre-llenar nombre en el formulario
+        var nameInput = document.getElementById('name');
+        if (nameInput) nameInput.value = g.nombre;
+        // Pre-seleccionar pases
+        var guestsInput = document.getElementById('guests');
+        if (guestsInput) guestsInput.value = g.pases_asignados;
+    }).catch(function(){});
+})();
+</script>
 </body>
 </html>
