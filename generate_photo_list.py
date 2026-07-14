@@ -9,23 +9,61 @@ import glob
 import json
 
 def generate_photo_list(photos_dir="imagenes", output_file="photos_list.js"):
-    webp_files = sorted(glob.glob(os.path.join(photos_dir, "*.webp")))
-
-    if not webp_files:
-        print(f"No se encontraron archivos WebP en {photos_dir}")
-        return
-
-    print(f"Encontradas {len(webp_files)} fotos WebP")
-
     photos_list = []
-    for webp_path in webp_files:
+    seen = set()
+
+    # Subcarpetas con categoría
+    subcarpetas = [
+        "1. Misa",
+        "2. fiesta vals",
+        "3. fiesta torito",
+        "4. extras",
+    ]
+
+    for subdir in subcarpetas:
+        subdir_path = os.path.join(photos_dir, subdir)
+        if not os.path.isdir(subdir_path):
+            continue
+        webp_files = sorted(glob.glob(os.path.join(subdir_path, "*.webp")))
+        print(f"  {subdir}: {len(webp_files)} fotos")
+        for webp_path in webp_files:
+            filename = os.path.basename(webp_path)
+            name_without_ext = os.path.splitext(filename)[0]
+            rel_path = f"{photos_dir}/{subdir}/{filename}"
+            thumb_path = f"{photos_dir}/thumb/{subdir}/{filename}"
+            if name_without_ext not in seen:
+                seen.add(name_without_ext)
+                entry = {
+                    "name": name_without_ext,
+                    "path": rel_path,
+                    "filename": filename,
+                    "category": subdir,
+                }
+                if os.path.exists(thumb_path):
+                    entry["thumb"] = thumb_path
+                photos_list.append(entry)
+
+    # Fotos sueltas en raíz (sin duplicar)
+    root_files = sorted(glob.glob(os.path.join(photos_dir, "*.webp")))
+    root_count = 0
+    for webp_path in root_files:
         filename = os.path.basename(webp_path)
         name_without_ext = os.path.splitext(filename)[0]
-        photos_list.append({
-            "name": name_without_ext,
-            "path": f"{photos_dir}/{filename}",
-            "filename": filename
-        })
+        if name_without_ext not in seen:
+            seen.add(name_without_ext)
+            photos_list.append({
+                "name": name_without_ext,
+                "path": f"{photos_dir}/{filename}",
+                "filename": filename,
+                "category": "general",
+            })
+            root_count += 1
+    if root_count:
+        print(f"  general (raíz): {root_count} fotos")
+
+    if not photos_list:
+        print(f"No se encontraron archivos WebP en {photos_dir}")
+        return
 
     js_code = f"""// Lista de fotos generada automaticamente
 // XV Anos Karla Lizbeth Bustamante Hernandez

@@ -358,8 +358,9 @@
                 card.onclick = () => openModal(index);
                 const badges = (selections[photo.name]?.categories || [])
                     .map(cat => `<span class="badge ${cat}">${getCategoryLabel(cat)}</span>`).join('');
+                const thumbSrc = photo.thumb || photo.path;
                 card.innerHTML = `
-                    <img src="${photo.path}" alt="Foto ${index + 1}" loading="lazy">
+                    <img src="${thumbSrc}" alt="Foto ${index + 1}" loading="lazy">
                     <div class="photo-number">#${String(index + 1).padStart(3, '0')}</div>
                     <div class="photo-badges">${badges}</div>`;
                 grid.appendChild(card);
@@ -481,7 +482,7 @@
             }
         });
     </script>
-    <script src="photos_list.js?v=1"></script>
+    <script src="photos_list.js?v=2"></script>
     <script src="default_selections.js?v=1"></script>
     <script src="visitas.js?v=1"></script>
 <script src="js/selector-sb-inline.js?v=1"></script>
